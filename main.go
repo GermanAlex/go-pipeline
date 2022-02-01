@@ -37,6 +37,7 @@ type RingIntBuffer struct {
 
 // NewRingIntBuffer - создание нового буфера целых чисел
 func NewRingIntBuffer(size int) *RingIntBuffer {
+	fmt.Fprintln(os.Stdout, "Create New Ring Buffer")
 	return &RingIntBuffer{make([]int, size), -1, size, sync.Mutex{}}
 }
 
@@ -44,6 +45,7 @@ func NewRingIntBuffer(size int) *RingIntBuffer {
 // При попытке добавления нового элемента в заполненный буфер
 // самое старое значение затирается
 func (r *RingIntBuffer) Push(el int) {
+	fmt.Fprintln(os.Stdout, "Add New Element to buffer")
 	r.m.Lock()
 	defer r.m.Unlock()
 	if r.pos == r.size-1 {
@@ -61,6 +63,7 @@ func (r *RingIntBuffer) Push(el int) {
 
 // Get - получение всех элементов буфера и его последующая очистка
 func (r *RingIntBuffer) Get() []int {
+	fmt.Fprintln(os.Stdout, "Get All Buf Elements and Clear")
 	if r.pos < 0 {
 		return nil
 	}
@@ -83,12 +86,14 @@ type PipeLineInt struct {
 
 // NewPipelineInt - Создание пайплайна обработки целых чисел
 func NewPipelineInt(done <-chan bool, stages ...StageInt) *PipeLineInt {
+	fmt.Fprintln(os.Stdout, "Create Pipeline")
 	return &PipeLineInt{done: done, stages: stages}
 }
 
 // Run - Запуск пайплайна обработки целых чисел
 // source - источник данных для конвейера
 func (p *PipeLineInt) Run(source <-chan int) <-chan int {
+	fmt.Fprintln(os.Stdout, "Run Pipeline")
 	var c <-chan int = source
 	for index := range p.stages {
 		c = p.runStageInt(p.stages[index], c)
@@ -98,10 +103,12 @@ func (p *PipeLineInt) Run(source <-chan int) <-chan int {
 
 // runStageInt - запуск отдельной стадии конвейера
 func (p *PipeLineInt) runStageInt(stage StageInt, sourceChan <-chan int) <-chan int {
+	fmt.Fprintln(os.Stdout, "Run stage pipeline")
 	return stage(p.done, sourceChan)
 }
 func main() {
 	// источник данных
+	fmt.Fprintln(os.Stdout, "Create data")
 	dataSource := func() (<-chan int, <-chan bool) {
 		c := make(chan int)
 		done := make(chan bool)
@@ -127,6 +134,7 @@ func main() {
 		return c, done
 	}
 	// стадия, фильтрующая отрицательные числа
+	fmt.Fprintln(os.Stdout, "negative filter stage")
 	negativeFilterStageInt := func(done <-chan bool, c <-chan int) <-chan int {
 		convertedIntChan := make(chan int)
 		go func() {
@@ -149,6 +157,7 @@ func main() {
 	}
 	// стадия, фильтрующая числа, не кратные 3
 	specialFilterStageInt := func(done <-chan bool, c <-chan int) <-chan int {
+		fmt.Fprintln(os.Stdout, "/3 filter stage")
 		filteredIntChan := make(chan int)
 		go func() {
 			for {
@@ -169,6 +178,7 @@ func main() {
 		return filteredIntChan
 	}
 	// стадия буферизации
+	fmt.Fprintln(os.Stdout, "buffer stage")
 	bufferStageInt := func(done <-chan bool, c <-chan int) <-chan int {
 		bufferedIntChan := make(chan int)
 		buffer := NewRingIntBuffer(bufferSize)
@@ -211,6 +221,7 @@ func main() {
 		return bufferedIntChan
 	}
 	// Потребитель данных от пайплайна
+	fmt.Fprintln(os.Stdout, "consumer pipeline stage")
 	consumer := func(done <-chan bool, c <-chan int) {
 		for {
 			select {
